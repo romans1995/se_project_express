@@ -1,16 +1,20 @@
 const router = require('express').Router();
-const { users } = require('./db');
+const cards = require('../data/cards.json');
 
-router.get('/users', (req, res) => {
-    res.send(users);
+
+router.get('/cards', (req, res) => {
+    res.send('cards');
 });
-
-router.get('/users/:id', (req, res) => {
-    if (!users[req.params.id]) {
+router.get('/cards/:id', (req, res) => {
+    const { id } = req.params;
+    const resolt = cards.find((card) => card._id === id);
+    if (resolt === undefined) {
         res.send({ error: `This user doesn't exist` });
         return;
     }
-    res.send(users[req.params.id]);
+    res.send(resolt);
+    console.log(resolt);
 });
+
 
 module.exports = router;
