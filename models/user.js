@@ -21,7 +21,7 @@ const userSchema = new mongoose.Schema({
         required: true,
         validator: function(v) {
             // use the regular expression from the user schema to validate the link
-            return /^[a-zA-Z0-9]+:\/\/[a-zA-Z0-9]+\.[A-Za-z]{2,}(:[0-9]+)?(\/.*)?$/.test(v);
+            return /https?:\/\/.*\.(?:png|jpg)|(?:com)/gmi.test(v);
         },
         message: props => `${props.value} is not a valid link!`
     }
