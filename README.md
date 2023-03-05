@@ -21,8 +21,6 @@ This project is built in Node JS, Express JS framework, MongoDB and Mongoose
 
 `/controllers` — functions to return data requested
 
-`/utils` — functions that can be used anywhere, regex variables, error codes
-
 ## Running the Project
 
 `npm run start` — to launch the server.

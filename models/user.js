@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const reg = `^(http|https):\/\/(www\.)?[a-zA-Z0-9-._~:?#[\]@!$&'()*+,;=]+#?$`
+const reg = new RegExp(`/[(http(s)?)://(www.)?a-zA-Z0-9@:%.+~#=]{2,256}.[a-z]{2,6}([-a-zA-Z0-9@:%+.~#?&//=]*)/`);
 const userSchema = new mongoose.Schema({
     name: { // every user has a name field, the requirements for which are described below:
         type: String, // the name is a string
@@ -19,11 +19,13 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,
         required: true,
-        validator: function(v) {
-            // use the regular expression from the user schema to validate the link
-            return /https?:\/\/.*\.(?:png|jpg)|(?:com)/gmi.test(v);
-        },
-        message: props => `${props.value} is not a valid link!`
+        validate: {
+            validator: (v) => {
+                // use the regular expression from the user schema to validate the link
+                reg.test(v);
+            },
+            message: props => `${props.value} is not a valid link!`
+        }
     }
 });
 
