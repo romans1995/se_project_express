@@ -18,12 +18,6 @@ app.use((req, res, next) => {
 
   next();
 }); 
-// mongoose.connect('mongodb://localhost:27017/aroundb',{
-//   useNewUrlParser:false,
-//   useCreateIndex:true,
-//   useFindAndModify:false,
-// });
-
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'routes')));

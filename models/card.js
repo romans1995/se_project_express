@@ -14,7 +14,7 @@ const cardSchema = new mongoose.Schema({
         validate: {
             validator: function(v) {
                 // use the regular expression from the user schema to validate the link
-                return /(https?:\/\/.*\.(?:png|jpg))/i.test(v);
+                return reg.test(v);
             },
             message: props => `${props.value} is not a valid link!`
         }
