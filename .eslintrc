@@ -4,6 +4,6 @@
     "no-underscore-dangle": ["error", { "allow": ["_id"]}],
      "linebreak-style": ["off"],
      "no-console": ["off"],
-     "devDependencies":["true"],
+     "devDependencies":["off"],
   }
 }

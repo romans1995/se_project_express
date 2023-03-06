@@ -19,9 +19,9 @@ module.exports.createCard = async (req, res) => {
     res.send(newcard);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(ERROR_CODE).send('try to check your data');
+      res.status(ERROR_CODE).send({ message: 'try to check your data' });
     } else {
-      res.status(SERVER_ERROR).send('An error has occurred on the server.');
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
   }
 };
@@ -51,7 +51,11 @@ module.exports.likeCard = async (req, res) => {
       { $addToSet: { likes: req.user._id } },
 
       { new: true },
-    ).orFail();
+    ).orFail(() => {
+      const error = new Error('No user/card found with that id');
+      error.statusCode = NOT_FOUND_ERROR;
+      throw error;
+    });
     res.send('like was added');
   } catch (err) {
     if (err.statusCode === NOT_FOUND_ERROR) {
@@ -69,8 +73,12 @@ module.exports.dislikeCard = async (req, res) => {
       req.params.cardId,
       { $pull: { likes: req.user._id } },
       { new: true },
-    ).orFail();
-    res.send('like was deleted');
+    ).orFail(() => {
+      const error = new Error('No card found with that id');
+      error.statusCode = NOT_FOUND_ERROR;
+      throw error;
+    });
+    res.send({ message: 'like was deleted' });
   } catch (err) {
     if (err.statusCode === NOT_FOUND_ERROR) {
       res.status(NOT_FOUND_ERROR).send({ message: 'invalid card id' });

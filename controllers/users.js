@@ -13,7 +13,11 @@ module.exports.getUsers = (req, res) => {
 
 module.exports.getUserById = async (req, res) => {
   try {
-    const user = await User.findById({ _id: req.params._id }).orFail();
+    const user = await User.findById({ _id: req.params._id }).orFail(() => {
+      const error = new Error('No user/card found with that id');
+      error.statusCode = NOT_FOUND_ERROR;
+      throw error;
+    });
     res.send(user);
   } catch (err) {
     if (err.statusCode === NOT_FOUND_ERROR) {
@@ -32,9 +36,9 @@ module.exports.createUser = async (req, res) => {
     res.send(newUser);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(ERROR_CODE).send('invalid data passed to the methods for creating a user ');
+      res.status(ERROR_CODE).send({ message: 'invalid data passed to the methods for creating a user ' });
     } else {
-      res.status(SERVER_ERROR).send('An error has occurred on the server.');
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
   }
 };
@@ -46,7 +50,11 @@ module.exports.updateUser = async (req, res) => {
       req.user._id,
       { name, about },
       { new: true, runValidators: true },
-    ).orFail();
+    ).orFail(() => {
+      const error = new Error('No user/card found with that id');
+      error.statusCode = NOT_FOUND_ERROR;
+      throw error;
+    });
     res.send(newUser);
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -65,7 +73,11 @@ module.exports.updateAvatar = async (req, res) => {
       req.user._id,
       { avatar },
       { new: true, runValidators: true },
-    ).orFail();
+    ).orFail(() => {
+      const error = new Error('No user/card found with that id');
+      error.statusCode = NOT_FOUND_ERROR;
+      throw error;
+    });
     res.send(newUser);
   } catch (err) {
     if (err.name === 'ValidationError') {
