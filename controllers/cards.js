@@ -1,61 +1,83 @@
-const Card = require("../models/card");
-const { response } = require("express");
+const Card = require('../models/card');
+const {
+  NOT_FOUND_ERROR,
+  ERROR_CODE,
+  SERVER_ERROR,
+} = require('../constants/utils');
+
 module.exports.getCards = (req, res) => {
-    Card.find({})
-        .orFail()
-        .then(card => res.send({ data: card }))
-        .catch(err => res.status(500).send({ message: 'Error', err }));
+  Card.find({})
+    .then((card) => res.send({ data: card }))
+    .catch(() => res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' }));
 };
 
-module.exports.createCard = async(req, res) => {
-    try {
-        const newcard = await Card.create(req.body)
-        res.send(newcard);
-        if (!newcard) {
-            res.status(400).send('invalid data passed to the methods for creating a card or updating a card image');
-        }
-    } catch (error) {
-        console.log('getcard error', error);
-        res.status(500).send('not found');
+module.exports.createCard = async (req, res) => {
+  const { name, link } = req.body;
+  const owner = req.user._id;
+  try {
+    const newcard = await Card.create({ name, link, owner });
+    res.send(newcard);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      res.status(ERROR_CODE).send('try to check your data');
+    } else {
+      res.status(SERVER_ERROR).send('An error has occurred on the server.');
     }
+  }
 };
-module.exports.deletecardById = async(req, res) => {
-    try {
-        const card = await Card.findByIdAndDelete({ _id: req.params._id }).orFail(() => {
-            throw new NotFoundError('Card not found');
-        });
-        res.send(newcard);
-        if (!card) {
-            res.status(404).send('card not found');
-        }
-    } catch (error) {
-        console.log('Error happend in getcard', error);
-        res.status(500).send('not found');
+module.exports.deletecardById = async (req, res) => {
+  try {
+    const card = await Card.findByIdAndDelete({ _id: req.params._id }).orFail(() => {
+      const error = new Error('No card found with that id');
+      error.statusCode = NOT_FOUND_ERROR;
+      throw error;
+    });
+    res.send(card);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      res.status(ERROR_CODE).send({ message: 'Invalid card id' });
+    } else if (err.statusCode === NOT_FOUND_ERROR) {
+      res.status(NOT_FOUND_ERROR).send({ message: err.message });
+    } else {
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
-}
+  }
+};
 
-module.exports.likeCard = async(req, res) => {
-    try {
-        console.log(req.params);
-        await Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, // add _id to the array if it's not there yet
-            { new: true },
-        );
-        res.send("like was added");
-    } catch (error) {
-        console.log('Error happend in likecard', error);
-        res.status(500).send('not found');
+module.exports.likeCard = async (req, res) => {
+  try {
+    await Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $addToSet: { likes: req.user._id } },
+
+      { new: true },
+    ).orFail();
+    res.send('like was added');
+  } catch (err) {
+    if (err.statusCode === NOT_FOUND_ERROR) {
+      res.status(NOT_FOUND_ERROR).send({ message: 'invalid card id' });
+    } else if (err.name === 'CastError') {
+      res.status(ERROR_CODE).send({ message: 'invalid card id' });
+    } else {
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
-
-}
-module.exports.dislikeCard = async(req, res) => {
-    try {
-        await Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, // add _id to the array if it's not there yet
-            { new: true },
-        );
-        res.send("like was delted");
-    } catch (error) {
-        console.log('Error happend in likecard', error);
-        res.status(500).send('not found');
+  }
+};
+module.exports.dislikeCard = async (req, res) => {
+  try {
+    await Card.findByIdAndUpdate(
+      req.params.cardId,
+      { $pull: { likes: req.user._id } },
+      { new: true },
+    ).orFail();
+    res.send('like was deleted');
+  } catch (err) {
+    if (err.statusCode === NOT_FOUND_ERROR) {
+      res.status(NOT_FOUND_ERROR).send({ message: 'invalid card id' });
+    } else if (err.name === 'CastError') {
+      res.status(ERROR_CODE).send({ message: 'invalid card id' });
+    } else {
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
-
-}
+  }
+};

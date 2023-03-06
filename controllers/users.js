@@ -1,59 +1,79 @@
-const User = require("../models/user");
-const { response } = require("express");
+const User = require('../models/user');
+const {
+  NOT_FOUND_ERROR,
+  ERROR_CODE,
+  SERVER_ERROR,
+} = require('../constants/utils');
+
 module.exports.getUsers = (req, res) => {
-    User.find({})
-        .orFail()
-        .then(user => res.send({ data: user }))
-        .catch(err => res.status(500).send({ message: 'Error', err }));
+  User.find({})
+    .then((user) => res.send({ data: user }))
+    .catch(() => res.status(SERVER_ERROR).send({ message: 'Error' }));
 };
 
-module.exports.getUserById = async(req, res) => {
-    try {
-        const user = await User.findById({ _id: req.params._id }).orFail(() => {
-            const error = new Error("No user found with that id");
-            error.statusCode = 404;
-            throw error;
-        });
-        res.send(user);
-    } catch (error) {
-        console.log('Error happend in getUser', error)
-        res.status(500).send('not found');
+module.exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById({ _id: req.params._id }).orFail();
+    res.send(user);
+  } catch (err) {
+    if (err.statusCode === NOT_FOUND_ERROR) {
+      res.status(NOT_FOUND_ERROR).send({ message: 'invalid user id' });
+    } else if (err.name === 'CastError') {
+      res.status(ERROR_CODE).send({ message: 'invalid user id' });
+    } else {
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
-}
-module.exports.createUser = async(req, res) => {
-    try {
-        const newUser = await User.create(req.body)
-
-        if (!newUser) {
-            res.status(400).send('invalid data passed to the methods for creating a user or updating a user avatar');
-        }
-        res.send(newUser);
-    } catch (error) {
-        res.status(500).send(error);
+  }
+};
+module.exports.createUser = async (req, res) => {
+  const { name, about, avatar } = req.body;
+  try {
+    const newUser = await User.create({ name, about, avatar });
+    res.send(newUser);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      res.status(ERROR_CODE).send('invalid data passed to the methods for creating a user ');
+    } else {
+      res.status(SERVER_ERROR).send('An error has occurred on the server.');
     }
+  }
 };
 
-module.exports.updateUser = async(req, res) => {
-    try {
-        const newUser = await User.updateOne(req.body)
-
-        if (!newUser) {
-            res.status(400).send('invalid data passed to the methods for creating a user or updating a user avatar');
-        }
-        res.send(newUser);
-    } catch (error) {
-        res.status(500).send(error);
+module.exports.updateUser = async (req, res) => {
+  try {
+    const { name, about } = req.body;
+    const newUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { name, about },
+      { new: true, runValidators: true },
+    ).orFail();
+    res.send(newUser);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      res.status(ERROR_CODE).send({ message: 'invalid data passed to the methods for creating a user ' });
+    } else if (err.statusCode === NOT_FOUND_ERROR) {
+      res.status(NOT_FOUND_ERROR).send({ message: 'there is no such user' });
+    } else {
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
+  }
 };
-module.exports.updateAvatar = async(req, res) => {
-    try {
-        console.log(req.body)
-        const newAvatr = await User.updateOne(req.body);
-        res.send('user avatar was changed');
-        if (!newAvatr) {
-            res.status(400).send('invalid data passed to the methods for creating a user or updating a user avatar');
-        }
-    } catch (error) {
-        res.status(500).send(error);
+module.exports.updateAvatar = async (req, res) => {
+  try {
+    const { avatar } = req.body;
+    const newUser = await User.findByIdAndUpdate(
+      req.user._id,
+      { avatar },
+      { new: true, runValidators: true },
+    ).orFail();
+    res.send(newUser);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      res.status(ERROR_CODE).send({ message: 'invalid data passed to the methods for updating a user avatar ' });
+    } else if (err.statusCode === NOT_FOUND_ERROR) {
+      res.status(NOT_FOUND_ERROR).send({ message: 'there is no such user' });
+    } else {
+      res.status(SERVER_ERROR).send({ message: 'An error has occurred on the server.' });
     }
+  }
 };

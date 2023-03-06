@@ -1,23 +1,29 @@
 const { PORT = 3000 } = process.env;
 const express = require('express');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+import rateLimit from 'express-rate-limit'
 
 const path = require('path');
 
 const app = express();
 
+const limiter = rateLimit({
+	windowMs: 15 * 60 * 1000, // 15 minutes
+	max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+	standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+	legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+})
+
 const userRoutes = require('./routes/users');
 const cardRoutes = require('./routes/cards');
-const bodyParser = require('body-parser');
+
 mongoose.connect('mongodb://127.0.0.1:27017/aroundb');
 mongoose.set('strictQuery', true);
 app.use((req, res, next) => {
-  req.user = {
-    _id: '63ff590682ad41f0582569bc' // paste the _id of the test user created in the previous step
-  };
-
+  req.user = { _id: '63ff590682ad41f0582569bc' };
   next();
-}); 
+});
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'routes')));
@@ -29,3 +35,5 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log('Server listening on port 3000');
 });
+app.use(helmet());
+app.use(limiter);
